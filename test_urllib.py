@@ -3,7 +3,7 @@
 import re
 import urllib.request
 
-contributions_url = 'https://github.com/users/tickelton/contributions'
+contributions_url = 'https://github.com/users/tickelton/contributions?to=2019-12-31'
 overview_url = 'https://github.com/tickelton'
 
 contributions_page = urllib.request.urlopen(contributions_url)
