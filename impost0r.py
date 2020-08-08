@@ -4,10 +4,15 @@ import tempfile
 import logging
 import sys
 import time
-import pygit2
+import dulwich
+import urllib.request
+import re
 
 # global variables
+user_name = 'XXXX'
 repo_name = 'decoy'
+user_email = 'tickelton@gmail.com'
+donor_name = 'YYYY'
 
 
 # logging configuration
@@ -20,39 +25,55 @@ logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
 
-def get_user_data():
-    "Get name and email address for commit from global git config"
+def get_contribution_data(user):
+    contributions_url = 'https://github.com/users/' + user + '/contributions'
+    overview_url = 'https://github.com/' + user
+    logger.info('getting data for %s', user)
+    logger.debug('contributions=%s overview=%s', contributions_url, overview_url)
 
-    ret_name = ''
-    ret_addr = ''
+    years = []
+    overview_page = urllib.request.urlopen(overview_url)
+    overview = overview_page.readlines()
 
-    c = pygit2.Config.get_global_config()
-    names = c.get_multivar('user.name')
-    email_addrs = c.get_multivar('user.email')
+    for line in overview:
+        match = re.search(b'id="year-link-(\d{4})', line)
 
-    for n in names:
-        if n:
-            ret_name = n
-    for a in email_addrs:
-        if a:
-            ret_addr = a
+        if not match:
+            continue
+        years.append(match.group(1))
 
-    if not ret_name:
-        logger.warning('Unable to determine username from global git config')
-    if not ret_addr:
-        logger.warning('Unable to determine email address from global git config')
+    contribution_data = {}
+    for year in years:
+        contributions_page = urllib.request.urlopen(contributions_url + '?to=' + year.decode() + '-12-31')
+        contributions = contributions_page.readlines()
+        for line in contributions:
+            match = re.search(br'data-count="(\d+)".*data-date="(\d+-\d+-\d+)"', line)
 
-    logger.info('Using user=%s,email=%s', ret_name, ret_addr)
-    return (ret_name, ret_addr)
+            if not match:
+                continue
+            if match.group(1) != b'0':
+                #print("date={} count={}".format(match.group(2), match.group(1)))
+                contribution_data[match.group(2).decode()] = int(match.group(1))
 
+    return contribution_data
+
+def diff_contribution_data(data_user, data_donor):
+    data_diff = {}
+    #print(data_donor)
+    #print(data_user)
+
+    for cdate in data_donor.keys():
+        count_user = data_user.get(cdate, 0)
+        count_donor = data_donor.get(cdate, 0)
+        if count_user >= count_donor:
+            continue
+        data_diff[cdate] = count_donor - count_user
+
+    #print(data_diff)
+    return data_diff
 
 
 def main():
-    
-    (user_name, user_email) = get_user_data()
-    if not user_name or not user_email:
-        print('TODO: ask for user/email')
-        sys.exit(1)
 
     tempdir = tempfile.TemporaryDirectory()
     logger.debug('Using tempdir=%s', tempdir.name)
@@ -60,7 +81,10 @@ def main():
     repo_url = 'https://github.com/' +  user_name + '/' + repo_name
     repo_tmpdir = tempdir.name + '/' + repo_name + '.git'
     logger.debug('Cloning %s to %s', repo_url, repo_tmpdir)
-    repo = pygit2.clone_repository(repo_url, repo_tmpdir)    
+
+    data_user = get_contribution_data(user_name)
+    data_donor = get_contribution_data(donor_name)
+    data_repo = diff_contribution_data(data_user, data_donor)
     
     #tempdir.cleanup()
 
