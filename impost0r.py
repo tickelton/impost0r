@@ -81,7 +81,7 @@ def diff_contribution_data(data_user, data_donor):
     #    runaway upscaling effects when the function is called
     #    repeatedly to update the user calendar when there are
     #    new contributions in the donor calendar.
-    return data_diff
+    return dict(sorted(data_diff.items(), key=lambda item: item[0]))
 
 
 def main():
@@ -103,6 +103,12 @@ def main():
 
     # TODO: currently only creates on commit per day
     #       needs to use data_repo[commit_date] 
+    # TODO: github will not correctly update the
+    #       calendar if a repository with commits for
+    #       more than ~4 years is pushed.
+    #       Workaround: create and push commits in
+    #       several turns (yearly?) and wait some
+    #       time between pushes (1 minute should work).
     for commit_date in data_repo.keys():
         commit_stamp = time.mktime(time.strptime(commit_date, '%Y-%m-%d')) + 37334 # magic constant to set the commit time to 9:22:14 AM
         f = open(repo_data_file, 'w')
