@@ -118,6 +118,7 @@ def main():
         repo.do_commit(message=commit_date.encode(), committer=author_data, author=author_data, commit_timestamp=commit_stamp)
 
     r2 = porcelain.push(repo_tmpdir, 'https://' + user_name + ':' + user_pass + '@github.com/' + user_name + '/' + repo_name, 'master')
+    repo.close()
     
     tempdir.cleanup()
 
