@@ -4,10 +4,14 @@ import tempfile
 import logging
 import sys
 import time
+import calendar
 import dulwich
 import urllib.request
 import re
 from dulwich import porcelain
+
+# constants
+seconds_9AM = 9 * 60 * 60
 
 # global variables
 user_name = 'XXXX'
@@ -101,23 +105,34 @@ def main():
     author_data = user_name.encode() + ' <'.encode() + user_email.encode() + '>'.encode()
     repo = porcelain.clone(repo_url, repo_tmpdir)
 
-    # TODO: currently only creates on commit per day
-    #       needs to use data_repo[commit_date] 
-    # TODO: github will not correctly update the
-    #       calendar if a repository with commits for
-    #       more than ~4 years is pushed.
+    # NOTE: github will not correctly update the
+    #       calendar if a repository with more than 1000
+    #       new commits is pushed. Only the most recent
+    #       1000 will be displayed in the calendar.
     #       Workaround: create and push commits in
-    #       several turns (yearly?) and wait some
-    #       time between pushes (1 minute should work).
+    #       several turns. And wait a couple of seconds
+    #       between pushes to let github do its magic.
+    total_commits = 0
     for commit_date in data_repo.keys():
-        commit_stamp = time.mktime(time.strptime(commit_date, '%Y-%m-%d')) + 37334 # magic constant to set the commit time to 9:22:14 AM
-        f = open(repo_data_file, 'w')
-        f.write(commit_date)
-        f.close()
-        porcelain.add(repo, repo_data_file)
-        repo.do_commit(message=commit_date.encode(), committer=author_data, author=author_data, commit_timestamp=commit_stamp)
+        for commit_num in range(0, data_repo[commit_date]):
+            commit_stamp = calendar.timegm(time.strptime(commit_date, '%Y-%m-%d')) + commit_num + seconds_9AM
+            f = open(repo_data_file, 'w')
+            f.write(commit_date + str(commit_num))
+            f.close()
+            porcelain.add(repo, repo_data_file)
+            total_commits += 1
+            repo.do_commit(message=commit_date.encode(), committer=author_data, author=author_data, commit_timestamp=commit_stamp)
 
-    r2 = porcelain.push(repo_tmpdir, 'https://' + user_name + ':' + user_pass + '@github.com/' + user_name + '/' + repo_name, 'master')
+            if total_commits == 960:
+                print('PUSHING')
+                r2 = porcelain.push(repo_tmpdir, 'https://' + user_name + ':' + user_pass + '@github.com/' + user_name + '/' + repo_name, 'master')
+                time.sleep(10)
+                total_commits = 0
+
+    print('DONE')
+    if total_commits:
+        r2 = porcelain.push(repo_tmpdir, 'https://' + user_name + ':' + user_pass + '@github.com/' + user_name + '/' + repo_name, 'master')
+
     repo.close()
     
     tempdir.cleanup()
