@@ -25,6 +25,21 @@ logger.addHandler(handler)
 logger.setLevel(logging.ERROR)
 
 
+# The progress bar function is
+# Copyright (c) 2016 Vladimir Ignatev
+# Licensed under the MIT License (MIT)
+# For details see LICENSE.MIT and
+# https://gist.github.com/vladignatyev/06860ec2040cb497f0f3
+def progress(count, total, status=''):
+    bar_len = 30
+    filled_len = int(round(bar_len * count / float(total)))
+
+    percents = round(100.0 * count / float(total), 1)
+    bar = '#' * filled_len + ' ' * (bar_len - filled_len)
+
+    sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', status))
+    sys.stdout.flush()
+
 def get_contribution_data(user):
     contributions_url = 'https://github.com/users/' + user + '/contributions'
     overview_url = 'https://github.com/' + user
@@ -43,6 +58,24 @@ def get_contribution_data(user):
         years.append(match.group(1))
 
     contribution_data = {}
+    # TODO: There seems to be a weird caching issue here.
+    #       sometimes newly created commits in the user
+    #       repo are not seen for days which leads to
+    #       unnecessary commits being created on
+    #       consecutive runs.
+    #       Maybe it would be better to get the years of
+    #       activity for both users beforehand and
+    #       use the longer period of the two for
+    #       both users ?
+    # WARNING: For the same reason running impost0r
+    #       in quick succession with the same
+    #       configuration can have unintended
+    #       consequences and create freakishly
+    #       large repositories.
+    #       Since there is no good way to properly
+    #       handle this without knowing the
+    #       user's intention that should be mentioned
+    #       in the documentation !
     for year in years:
         contributions_page = urllib.request.urlopen(contributions_url + '?to=' + year.decode() + '-12-31')
         contributions = contributions_page.readlines()
@@ -59,8 +92,6 @@ def get_contribution_data(user):
 
 def diff_contribution_data(data_user, data_donor):
     data_diff = {}
-    #print(data_donor)
-    #print(data_user)
 
     for cdate in data_donor.keys():
         count_user = data_user.get(cdate, 0)
@@ -69,15 +100,22 @@ def diff_contribution_data(data_user, data_donor):
             continue
         data_diff[cdate] = count_donor - count_user
 
-    #print(data_diff)
     # TODO(possibly): add scaling
-    #  if the user calendar has days with more commits than the
+    #  If the user calendar has days with more commits than the
     #  donor calendar the merged calendar will look very different
     #  to the donor calendar.
-    #  BEWARE: when scaling the data take care not to introduce
+    #  BEWARE: When scaling the data take care not to introduce
     #    runaway upscaling effects when the function is called
     #    repeatedly to update the user calendar when there are
     #    new contributions in the donor calendar.
+
+    # Sorting the data is not strictly necessary but
+    # by doing so the commits will also appear in
+    # proper chronological order if the resulting
+    # repository is viewed with e.g. 'git log'.
+    # Otherwise git would show them in whatever
+    # order we parsed them from the website which
+    # just looks weird to a human observer.
     return dict(sorted(data_diff.items(), key=lambda item: item[0]))
 
 
@@ -125,13 +163,13 @@ def main():
     author_data = config['username'].encode() + ' <'.encode() + config['email'].encode() + '>'.encode()
     repo = porcelain.clone(repo_url, repo_tmpdir)
 
-    # NOTE: github will not correctly update the
+    # NOTE: Github will not correctly update the
     #       calendar if a repository with more than 1000
     #       new commits is pushed. Only the most recent
     #       1000 will be displayed in the calendar.
     #       Workaround: create and push commits in
     #       several turns. And wait a couple of seconds
-    #       between pushes to let github do its magic.
+    #       between pushes to let Github do its magic.
     commits_generated = 0
     for commit_date in data_repo.keys():
         for commit_num in range(0, data_repo[commit_date]):
@@ -144,16 +182,16 @@ def main():
             repo.do_commit(message=commit_date.encode(), committer=author_data, author=author_data, commit_timestamp=commit_stamp)
 
             if not commits_generated % 60:
-                # TODO: compute expected total commits beforehand
+                # TODO: Compute expected total commits beforehand
                 #       and display a progress bar ?
                 pass
 
             if commits_generated == 960:
                 logger.info('pushing...')
                 r2 = porcelain.push(repo_tmpdir, push_url, 'master')
-                # TODO: the sleep should not be necessary as
+                # TODO: The sleep should not be necessary as
                 #       repo creation is sufficiently slow to
-                #       not confuse github with too many commits.
+                #       not confuse Github with too many commits.
                 #       can this be made more robust ?
                 #time.sleep(10)
                 commits_generated = 0
