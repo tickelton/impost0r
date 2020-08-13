@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import tempfile
 import logging
 import sys
@@ -9,18 +10,10 @@ import dulwich
 import urllib.request
 import re
 from dulwich import porcelain
+from getpass import getpass
 
 # constants
 seconds_9AM = 9 * 60 * 60
-
-# global variables
-user_name = 'XXXX'
-user_pass = 'YYYY'
-repo_name = 'impost0r-demo'
-data_file = 'data.py'
-user_email = 'tickelton@gmail.com'
-donor_name = 'ZZZZ'
-
 
 # logging configuration
 logger = logging.getLogger()
@@ -29,7 +22,7 @@ formatter = logging.Formatter(
                 '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 def get_contribution_data(user):
@@ -88,21 +81,48 @@ def diff_contribution_data(data_user, data_donor):
     return dict(sorted(data_diff.items(), key=lambda item: item[0]))
 
 
+def cli_get_configuration():
+    config = {}
+
+    config['username'] = input('Your Github username: ')
+    config['email'] = input('Your Github email address: ')
+    config['password'] = getpass('Your Github password: ')
+    config['repo'] = input('Github repository to create commits in: ')
+    config['donor'] = input('Github user to clone: ')
+    config['data_file'] = 'data.py'
+
+    # TODO: Do some sanity checking of configuration
+    return config
+
+
 def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--verbose', '-v', action='count', default=0)
+    args = parser.parse_args()
+    if args.verbose == 1:
+        logger.setLevel(logging.WARNING)
+    elif args.verbose == 2:
+        logger.setLevel(logging.INFO)
+    elif args.verbose > 2:
+        logger.setLevel(logging.DEBUG)
+
+    config = cli_get_configuration()
 
     tempdir = tempfile.TemporaryDirectory()
     logger.debug('Using tempdir=%s', tempdir.name)
 
-    repo_url = 'https://github.com/' +  user_name + '/' + repo_name
-    repo_tmpdir = tempdir.name + '/' + repo_name
-    repo_data_file = repo_tmpdir + '/' + data_file
+    repo_url = 'https://github.com/' +  config['username'] + '/' + config['repo']
+    repo_tmpdir = tempdir.name + '/' + config['repo']
+    repo_data_file = repo_tmpdir + '/' + config['data_file']
+    push_url = 'https://' + config['username'] + ':' + config['password'] + '@github.com/' + config['username'] + '/' + config['repo']
     logger.debug('Cloning %s to %s', repo_url, repo_tmpdir)
 
-    data_user = get_contribution_data(user_name)
-    data_donor = get_contribution_data(donor_name)
+    data_user = get_contribution_data(config['username'])
+    data_donor = get_contribution_data(config['donor'])
     data_repo = diff_contribution_data(data_user, data_donor)
 
-    author_data = user_name.encode() + ' <'.encode() + user_email.encode() + '>'.encode()
+    author_data = config['username'].encode() + ' <'.encode() + config['email'].encode() + '>'.encode()
     repo = porcelain.clone(repo_url, repo_tmpdir)
 
     # NOTE: github will not correctly update the
@@ -112,7 +132,7 @@ def main():
     #       Workaround: create and push commits in
     #       several turns. And wait a couple of seconds
     #       between pushes to let github do its magic.
-    total_commits = 0
+    commits_generated = 0
     for commit_date in data_repo.keys():
         for commit_num in range(0, data_repo[commit_date]):
             commit_stamp = calendar.timegm(time.strptime(commit_date, '%Y-%m-%d')) + commit_num + seconds_9AM
@@ -120,18 +140,27 @@ def main():
             f.write(commit_date + str(commit_num))
             f.close()
             porcelain.add(repo, repo_data_file)
-            total_commits += 1
+            commits_generated += 1
             repo.do_commit(message=commit_date.encode(), committer=author_data, author=author_data, commit_timestamp=commit_stamp)
 
-            if total_commits == 960:
-                print('PUSHING')
-                r2 = porcelain.push(repo_tmpdir, 'https://' + user_name + ':' + user_pass + '@github.com/' + user_name + '/' + repo_name, 'master')
-                time.sleep(10)
-                total_commits = 0
+            if not commits_generated % 60:
+                # TODO: compute expected total commits beforehand
+                #       and display a progress bar ?
+                pass
 
-    print('DONE')
-    if total_commits:
-        r2 = porcelain.push(repo_tmpdir, 'https://' + user_name + ':' + user_pass + '@github.com/' + user_name + '/' + repo_name, 'master')
+            if commits_generated == 960:
+                logger.info('pushing...')
+                r2 = porcelain.push(repo_tmpdir, push_url, 'master')
+                # TODO: the sleep should not be necessary as
+                #       repo creation is sufficiently slow to
+                #       not confuse github with too many commits.
+                #       can this be made more robust ?
+                #time.sleep(10)
+                commits_generated = 0
+
+    if commits_generated:
+        logger.info('final push')
+        r2 = porcelain.push(repo_tmpdir, push_url, 'master')
 
     repo.close()
     
