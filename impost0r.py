@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""
+impost0r.py lets you clone another user's github contribution calender
+
+This is achieved by creating a repository containing backdated
+commits that replicates the activity of the source user
+as closely as possible.
+"""
+
+# Copyright (c) 2020 tick <tickelton@gmail.com>
+# SPDX-License-Identifier:	ISC
 
 import argparse
 import tempfile
@@ -6,23 +16,24 @@ import logging
 import sys
 import time
 import calendar
-import dulwich
 import urllib.request
 import os
 import re
-from dulwich import porcelain
 from getpass import getpass
+from dulwich import porcelain
 
 
 # constants
-seconds_9AM = 9 * 60 * 60
+PROGNAME = 'impost0r.py'
+VERSION = '0.1.0'
+SECONDS_9AM = 9 * 60 * 60
 
 
 # logging configuration
 logger = logging.getLogger()
 handler = logging.StreamHandler()
 formatter = logging.Formatter(
-                '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+    '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.ERROR)
@@ -31,19 +42,24 @@ logger.setLevel(logging.ERROR)
 # The progress bar function is
 # Copyright (c) 2016 Vladimir Ignatev
 # Licensed under the MIT License (MIT)
+# SPDX-License-Identifier:	MIT
 # For details see LICENSE.MIT and
 # https://gist.github.com/vladignatyev/06860ec2040cb497f0f3
 def progress(count, total, status=''):
+    """Print a pretty progress bar on the console"""
+
     bar_len = 30
     filled_len = int(round(bar_len * count / float(total)))
 
     percents = round(100.0 * count / float(total), 1)
-    bar = '#' * filled_len + ' ' * (bar_len - filled_len)
+    bar_string = '#' * filled_len + ' ' * (bar_len - filled_len)
 
-    sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', status))
+    sys.stdout.write('[%s] %s%s %s\r' % (bar_string, percents, '%', status))
     sys.stdout.flush()
 
 def get_years_of_activity(user):
+    """Gets the years of activity from a Github user's profile page"""
+
     overview_url = 'https://github.com/' + user
     logger.info('overview_url=%s', overview_url)
 
@@ -53,7 +69,7 @@ def get_years_of_activity(user):
     logger.debug('overview=%s', overview)
 
     for line in overview:
-        match = re.search(b'id="year-link-(\d{4})', line)
+        match = re.search(rb'id="year-link-(\d{4})', line)
 
         if not match:
             continue
@@ -63,6 +79,7 @@ def get_years_of_activity(user):
 
 
 def get_contribution_data(user, years):
+    """Gets the daily acitivity from a Github user's contribution calendar"""
 
     contributions_url = 'https://github.com/users/' + user + '/contributions'
     logger.info('getting data for %s', user)
@@ -70,7 +87,8 @@ def get_contribution_data(user, years):
 
     contribution_data = {}
     for year in years:
-        contributions_page = urllib.request.urlopen(contributions_url + '?to=' + year.decode() + '-12-31')
+        contributions_page = urllib.request.urlopen(
+            contributions_url + '?to=' + year.decode() + '-12-31')
         contributions = contributions_page.readlines()
         logger.debug('year=%s, contributions=%s', year, contributions)
         for line in contributions:
@@ -86,6 +104,8 @@ def get_contribution_data(user, years):
     return contribution_data
 
 def diff_contribution_data(data_user, data_donor):
+    """Calculates the difference between two Github users' activity data"""
+
     data_diff = {}
 
     for cdate in data_donor.keys():
@@ -116,6 +136,8 @@ def diff_contribution_data(data_user, data_donor):
 
 
 def cli_get_configuration():
+    """Read configuration from the command line"""
+
     config = {}
 
     config['username'] = input('Your Github username: ')
@@ -140,20 +162,21 @@ def cli_get_configuration():
         sys.exit(1)
     config['data_file'] = 'data.py'
 
-    logger.info('username=%s email=%s repo=%s donor=%s',
-            config['username'],
-            config['email'],
-            config['repo'],
-            config['donor'],
-            config['data_file']
-            )
+    logger.info('username=%s email=%s repo=%s donor=%s data_file=%s',
+                config['username'],
+                config['email'],
+                config['repo'],
+                config['donor'],
+                config['data_file'])
     return config
 
 
 def main():
+    """impost0r.py main function"""
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog=PROGNAME)
     parser.add_argument('--verbose', '-v', action='count', default=0)
+    parser.add_argument('--version', action='version', version='%(prog)s v' + VERSION)
     args = parser.parse_args()
     if args.verbose == 1:
         logger.setLevel(logging.WARNING)
@@ -170,7 +193,14 @@ def main():
     repo_url = 'https://github.com/' +  config['username'] + '/' + config['repo']
     repo_tmpdir = tempdir.name + '/' + config['repo']
     repo_data_file = repo_tmpdir + '/' + config['data_file']
-    push_url = 'https://' + config['username'] + ':' + config['password'] + '@github.com/' + config['username'] + '/' + config['repo']
+    push_url = 'https://'\
+            + config['username']\
+            + ':'\
+            + config['password']\
+            + '@github.com/'\
+            + config['username']\
+            + '/'\
+            + config['repo']
     logger.info('Cloning %s to %s', repo_url, repo_tmpdir)
 
     active_years = get_years_of_activity(config['donor'])
@@ -199,8 +229,8 @@ def main():
     if not data_donor:
         print('No activity found for {}.'.format(config['donor']))
         sys.exit(0)
-        
-    print('Calculating commit data {}...')
+
+    print('Calculating commit data...')
     data_repo = diff_contribution_data(data_user, data_donor)
     if not data_repo:
         print('{} does not seem to have more contributions than {}.'.format(
@@ -210,13 +240,15 @@ def main():
         print('Nothing to do; exiting.')
         sys.exit(0)
 
-    author_data = config['username'].encode() + ' <'.encode() + config['email'].encode() + '>'.encode()
-    logger.info('Using author data: "%"', author_data)
+    author_data = config['username'].encode()\
+            + ' <'.encode()\
+            + config['email'].encode()\
+            + '>'.encode()
+    logger.info('Using author data: \'%s\'', author_data.decode())
 
     print('Cloning {}...'.format(repo_url))
     devnull = open(os.devnull, 'w')
-    err_stream = (
-        getattr(devnull, 'buffer', None) or NoneStream())
+    err_stream = getattr(devnull, 'buffer', None)
     # TODO: How do you check if clone was successful ?
     repo = porcelain.clone(repo_url, repo_tmpdir, errstream=err_stream)
 
@@ -232,13 +264,18 @@ def main():
     commits_generated = 0
     for commit_date in data_repo.keys():
         for commit_num in range(0, data_repo[commit_date]):
-            commit_stamp = calendar.timegm(time.strptime(commit_date, '%Y-%m-%d')) + commit_num + seconds_9AM
-            f = open(repo_data_file, 'w')
-            f.write(commit_date + str(commit_num))
-            f.close()
+            commit_stamp = calendar.timegm(
+                time.strptime(commit_date, '%Y-%m-%d')) + commit_num + SECONDS_9AM
+            data_file = open(repo_data_file, 'w')
+            data_file.write(commit_date + str(commit_num))
+            data_file.close()
             porcelain.add(repo, repo_data_file)
             commits_generated += 1
-            repo.do_commit(message=commit_date.encode(), committer=author_data, author=author_data, commit_timestamp=commit_stamp)
+            repo.do_commit(
+                message=commit_date.encode(),
+                committer=author_data,
+                author=author_data,
+                commit_timestamp=commit_stamp)
 
             if not commits_generated % 60:
                 # TODO: Compute expected total commits beforehand
@@ -247,21 +284,25 @@ def main():
 
             if not commits_generated % 960:
                 logger.info('pushing...')
-                r2 = porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
+                porcelain.push(
+                    repo_tmpdir,
+                    push_url,
+                    'master',
+                    outstream=err_stream,
+                    errstream=err_stream)
 
     if commits_generated % 960:
         logger.info('final push')
         progress(commits_generated, total_commit_count)
-        r2 = porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
+        porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
 
     progress(commits_generated, total_commit_count)
-    print('Finished')
+    print('\nFinished')
 
     repo.close()
-    
+
     tempdir.cleanup()
 
 
 if __name__ == '__main__':
     main()
-
