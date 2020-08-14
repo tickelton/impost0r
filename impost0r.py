@@ -8,12 +8,15 @@ import time
 import calendar
 import dulwich
 import urllib.request
+import os
 import re
 from dulwich import porcelain
 from getpass import getpass
 
+
 # constants
 seconds_9AM = 9 * 60 * 60
+
 
 # logging configuration
 logger = logging.getLogger()
@@ -40,15 +43,14 @@ def progress(count, total, status=''):
     sys.stdout.write('[%s] %s%s %s\r' % (bar, percents, '%', status))
     sys.stdout.flush()
 
-def get_contribution_data(user):
-    contributions_url = 'https://github.com/users/' + user + '/contributions'
+def get_years_of_activity(user):
     overview_url = 'https://github.com/' + user
-    logger.info('getting data for %s', user)
-    logger.debug('contributions=%s overview=%s', contributions_url, overview_url)
+    logger.info('overview_url=%s', overview_url)
 
     years = []
     overview_page = urllib.request.urlopen(overview_url)
     overview = overview_page.readlines()
+    logger.debug('overview=%s', overview)
 
     for line in overview:
         match = re.search(b'id="year-link-(\d{4})', line)
@@ -57,28 +59,20 @@ def get_contribution_data(user):
             continue
         years.append(match.group(1))
 
+    return years
+
+
+def get_contribution_data(user, years):
+
+    contributions_url = 'https://github.com/users/' + user + '/contributions'
+    logger.info('getting data for %s', user)
+    logger.info('contributions_url=%s', contributions_url)
+
     contribution_data = {}
-    # TODO: There seems to be a weird caching issue here.
-    #       sometimes newly created commits in the user
-    #       repo are not seen for days which leads to
-    #       unnecessary commits being created on
-    #       consecutive runs.
-    #       Maybe it would be better to get the years of
-    #       activity for both users beforehand and
-    #       use the longer period of the two for
-    #       both users ?
-    # WARNING: For the same reason running impost0r
-    #       in quick succession with the same
-    #       configuration can have unintended
-    #       consequences and create freakishly
-    #       large repositories.
-    #       Since there is no good way to properly
-    #       handle this without knowing the
-    #       user's intention that should be mentioned
-    #       in the documentation !
     for year in years:
         contributions_page = urllib.request.urlopen(contributions_url + '?to=' + year.decode() + '-12-31')
         contributions = contributions_page.readlines()
+        logger.debug('year=%s, contributions=%s', year, contributions)
         for line in contributions:
             match = re.search(br'data-count="(\d+)".*data-date="(\d+-\d+-\d+)"', line)
 
@@ -88,6 +82,7 @@ def get_contribution_data(user):
                 #print("date={} count={}".format(match.group(2), match.group(1)))
                 contribution_data[match.group(2).decode()] = int(match.group(1))
 
+    logger.debug('contribution_data=%s', contribution_data)
     return contribution_data
 
 def diff_contribution_data(data_user, data_donor):
@@ -100,6 +95,7 @@ def diff_contribution_data(data_user, data_donor):
             continue
         data_diff[cdate] = count_donor - count_user
 
+    logger.debug('data_diff=%s', data_diff)
     # TODO(possibly): add scaling
     #  If the user calendar has days with more commits than the
     #  donor calendar the merged calendar will look very different
@@ -123,13 +119,34 @@ def cli_get_configuration():
     config = {}
 
     config['username'] = input('Your Github username: ')
+    if not config['username']:
+        logger.error('Username required')
+        sys.exit(1)
     config['email'] = input('Your Github email address: ')
+    if not config['email']:
+        logger.error('Email address required')
+        sys.exit(1)
     config['password'] = getpass('Your Github password: ')
+    if not config['password']:
+        logger.error('Password required')
+        sys.exit(1)
     config['repo'] = input('Github repository to create commits in: ')
+    if not config['repo']:
+        logger.error('Repository name required')
+        sys.exit(1)
     config['donor'] = input('Github user to clone: ')
+    if not config['donor']:
+        logger.error('Donor username required')
+        sys.exit(1)
     config['data_file'] = 'data.py'
 
-    # TODO: Do some sanity checking of configuration
+    logger.info('username=%s email=%s repo=%s donor=%s',
+            config['username'],
+            config['email'],
+            config['repo'],
+            config['donor'],
+            config['data_file']
+            )
     return config
 
 
@@ -148,21 +165,62 @@ def main():
     config = cli_get_configuration()
 
     tempdir = tempfile.TemporaryDirectory()
-    logger.debug('Using tempdir=%s', tempdir.name)
+    logger.info('Using tempdir=%s', tempdir.name)
 
     repo_url = 'https://github.com/' +  config['username'] + '/' + config['repo']
     repo_tmpdir = tempdir.name + '/' + config['repo']
     repo_data_file = repo_tmpdir + '/' + config['data_file']
     push_url = 'https://' + config['username'] + ':' + config['password'] + '@github.com/' + config['username'] + '/' + config['repo']
-    logger.debug('Cloning %s to %s', repo_url, repo_tmpdir)
+    logger.info('Cloning %s to %s', repo_url, repo_tmpdir)
 
-    data_user = get_contribution_data(config['username'])
-    data_donor = get_contribution_data(config['donor'])
+    active_years = get_years_of_activity(config['donor'])
+    if not active_years:
+        logger.error('No yearly data found for %s.', config['donor'])
+        sys.exit(0)
+
+    # NOTE: There seems to be a weird caching issue here.
+    #       Sometimes newly created commits in the user
+    #       repo are not visible for days in the list
+    #       of years of activity on the overview page
+    #       which leads to unnecessary commits being
+    #       created on consecutive runs.
+    #       Therefore we only get the years of activity
+    #       of the donor user and use those also to
+    #       get activity data for the target user.
+    #       Otherwise running impost0r
+    #       in quick succession with the same
+    #       configuration can have unintended
+    #       consequences and create freakishly
+    #       large repositories.
+    print('Getting activity for {}...'.format(config['username']))
+    data_user = get_contribution_data(config['username'], active_years)
+    print('Getting activity for {}...'.format(config['donor']))
+    data_donor = get_contribution_data(config['donor'], active_years)
+    if not data_donor:
+        print('No activity found for {}.'.format(config['donor']))
+        sys.exit(0)
+        
+    print('Calculating commit data {}...')
     data_repo = diff_contribution_data(data_user, data_donor)
+    if not data_repo:
+        print('{} does not seem to have more contributions than {}.'.format(
+            config['donor'],
+            config['username']
+            ))
+        print('Nothing to do; exiting.')
+        sys.exit(0)
 
     author_data = config['username'].encode() + ' <'.encode() + config['email'].encode() + '>'.encode()
-    repo = porcelain.clone(repo_url, repo_tmpdir)
+    logger.info('Using author data: "%"', author_data)
 
+    print('Cloning {}...'.format(repo_url))
+    devnull = open(os.devnull, 'w')
+    err_stream = (
+        getattr(devnull, 'buffer', None) or NoneStream())
+    # TODO: How do you check if clone was successful ?
+    repo = porcelain.clone(repo_url, repo_tmpdir, errstream=err_stream)
+
+    print('Creating and pushing new commits ...')
     # NOTE: Github will not correctly update the
     #       calendar if a repository with more than 1000
     #       new commits is pushed. Only the most recent
@@ -170,6 +228,7 @@ def main():
     #       Workaround: create and push commits in
     #       several turns. And wait a couple of seconds
     #       between pushes to let Github do its magic.
+    total_commit_count = sum(data_repo.values())
     commits_generated = 0
     for commit_date in data_repo.keys():
         for commit_num in range(0, data_repo[commit_date]):
@@ -184,21 +243,19 @@ def main():
             if not commits_generated % 60:
                 # TODO: Compute expected total commits beforehand
                 #       and display a progress bar ?
-                pass
+                progress(commits_generated, total_commit_count)
 
-            if commits_generated == 960:
+            if not commits_generated % 960:
                 logger.info('pushing...')
-                r2 = porcelain.push(repo_tmpdir, push_url, 'master')
-                # TODO: The sleep should not be necessary as
-                #       repo creation is sufficiently slow to
-                #       not confuse Github with too many commits.
-                #       can this be made more robust ?
-                #time.sleep(10)
-                commits_generated = 0
+                r2 = porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
 
-    if commits_generated:
+    if commits_generated % 960:
         logger.info('final push')
-        r2 = porcelain.push(repo_tmpdir, push_url, 'master')
+        progress(commits_generated, total_commit_count)
+        r2 = porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
+
+    progress(commits_generated, total_commit_count)
+    print('Finished')
 
     repo.close()
     
