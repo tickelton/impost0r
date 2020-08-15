@@ -102,6 +102,12 @@ to 0.20.3 should work.
 * cloning data from an user with several years of regular activity can
 take a significant amount of time. E.g. cloning 10 years worth of 10+
 contributions per day can take in excess of 30 minutes.
+* for several reasons it is often not possible to create a contribution
+calendar that is an exact copy of that of another user. E.g. if you
+already have some contributions of your own and the number of contributions
+on a particular day exceeds the maximum number of single day contributions
+in the donor's calendar the colors in your calendar will probably be off
+after running impost0r.
 
 
 EXAMPLE
