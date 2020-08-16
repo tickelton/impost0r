@@ -290,6 +290,12 @@ def main():
                     'master',
                     outstream=err_stream,
                     errstream=err_stream)
+                # NOTE: A certain minimum wait between pushes seems
+                #       to be necessary. Otherwise the activity data
+                #       in the calendar will be displayed correctly
+                #       but the list of years of activity will not
+                #       be updated!
+                time.sleep(10)
 
     if commits_generated % 960:
         logger.info('final push')
