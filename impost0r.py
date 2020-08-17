@@ -262,8 +262,8 @@ def main():
     #       between pushes to let Github do its magic.
     total_commit_count = sum(data_repo.values())
     commits_generated = 0
-    for commit_date in data_repo.keys():
-        for commit_num in range(0, data_repo[commit_date]):
+    for (commit_date, commit_count) in data_repo.items():
+        for commit_num in range(0, commit_count):
             commit_stamp = calendar.timegm(
                 time.strptime(commit_date, '%Y-%m-%d')) + commit_num + SECONDS_9AM
             data_file = open(repo_data_file, 'w')

@@ -30,3 +30,6 @@ test_online:
 test_misc:
 	pipenv run python -m unittest test.test_impost0r.Impost0rMiscTests
 
+cx_freeze:
+	pipenv run cxfreeze --target-dir=dist impost0r.py
+

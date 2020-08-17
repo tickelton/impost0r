@@ -11,9 +11,9 @@ impost0r was created as a successor to [ghdecoy](https://github.com/tickelton/gh
 (which in turn was inspired by [gitfiti](https://github.com/gelstudios/gitfiti))
 and addresses the following shortcomings and features that were often
 requested for its successor:
-* Operating system independence: work on Linux and Windows
-* more 'human looking' contributions than ghdecoy's random data
-* no dependence on an existing git installation or other external tools
+* Operating system independence: work on Linux and Windows.
+* More 'human looking' contributions than ghdecoy's random data.
+* No dependence on an existing git installation or other external tools.
 
 Demo
 ------------
@@ -83,31 +83,38 @@ you want to clone
 Known issues and limitations
 ----------------------------
 
-* the newly created commits will usually become visible on your
+* The newly created commits will usually become visible on your
 calendar withing minutes (according to Github it can take up to 24 hours!)
 but the list with your years of activity at the bottom right of your
 account's overview page can take much longer to get updated and for some
 reason occasionally will not get updated at all. If the changes do not
 become visible even after a couple of days, it usually helps to delete
-the repository and run impost0r again.
+the repository and run impost0r again.  
+***NOTE:*** To other users only the years of activity since the
+creation of your account will be visible in your timeline. Only you
+yourself will see an extended list going back to commits in your
+repositories that were created before your registration.
 * impost0r currently requires that the repository it creates its commits
 in is publicy readable.
-* even if there is an existing installation of git, impost0r will currently
+* Even if there is an existing installation of git, impost0r will currently
 not use its configuration (like username and email) but ask you to enter
 the data explicitly.
-* there is a bug in dulwich 0.20.5 which causes the following error:
+* There is a bug in dulwich 0.20.5 which causes the following error:
 The problem should be solved in newer versions of dulwich. As a workaround
 until a fixed version is available installing in from git or downgrading
 to 0.20.3 should work.
-* cloning data from an user with several years of regular activity can
+* Cloning data from an user with several years of regular activity can
 take a significant amount of time. E.g. cloning 10 years worth of 10+
 contributions per day can take in excess of 30 minutes.
-* for several reasons it is often not possible to create a contribution
+* For several reasons it is often not possible to create a contribution
 calendar that is an exact copy of that of another user. E.g. if you
 already have some contributions of your own and the number of contributions
 on a particular day exceeds the maximum number of single day contributions
 in the donor's calendar the colors in your calendar will probably be off
 after running impost0r.
+* ***CAUTION:*** Do not try to copy the data from https://github.com/tickelton
+since this account is used to occasionally test new features for impost0r.
+Cloning its history can therefore lead to unintended side effects!
 
 
 EXAMPLE
