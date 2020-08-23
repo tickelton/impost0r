@@ -11,6 +11,7 @@ help:
 	@echo "test_online :    run online unit tests"
 	@echo "test_misc   :    run misc unit tests"
 	@echo "requirements:    create requirements.txt"
+	@echo "cx_freeze   :    create distributable"
 
 run:
 	pipenv run python3 impost0r.py
