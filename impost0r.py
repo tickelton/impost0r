@@ -20,7 +20,8 @@ import urllib.request
 import os
 import re
 from getpass import getpass
-from dulwich import porcelain
+from typing import Dict, List
+from dulwich import porcelain # type: ignore
 
 
 # constants
@@ -45,7 +46,7 @@ logger.setLevel(logging.ERROR)
 # SPDX-License-Identifier:	MIT
 # For details see LICENSE.MIT and
 # https://gist.github.com/vladignatyev/06860ec2040cb497f0f3
-def progress(count, total, status=''):
+def progress(count: int, total: int, status: str = '') -> None:
     """Print a pretty progress bar on the console"""
 
     bar_len = 30
@@ -57,13 +58,13 @@ def progress(count, total, status=''):
     sys.stdout.write('[%s] %s%s %s\r' % (bar_string, percents, '%', status))
     sys.stdout.flush()
 
-def get_years_of_activity(user):
+def get_years_of_activity(user: str) -> List[bytes]:
     """Gets the years of activity from a Github user's profile page"""
 
     overview_url = 'https://github.com/' + user
     logger.info('overview_url=%s', overview_url)
 
-    years = []
+    years: List[bytes] = []
     overview_page = urllib.request.urlopen(overview_url)
     overview = overview_page.readlines()
     logger.debug('overview=%s', overview)
@@ -78,21 +79,21 @@ def get_years_of_activity(user):
     return years
 
 
-def get_contribution_data(user, years):
+def get_contribution_data(user: str, years: List[bytes]) -> Dict[str, int]:
     """Gets the daily acitivity from a Github user's contribution calendar"""
 
     contributions_url = 'https://github.com/users/' + user + '/contributions'
     logger.info('getting data for %s', user)
     logger.info('contributions_url=%s', contributions_url)
 
-    contribution_data = {}
+    contribution_data: Dict[str, int] = {}
     for year in years:
         contributions_page = urllib.request.urlopen(
             contributions_url + '?to=' + year.decode() + '-12-31')
         contributions = contributions_page.readlines()
         logger.debug('year=%s, contributions=%s', year, contributions)
         for line in contributions:
-            match = re.search(br'data-count="(\d+)".*data-date="(\d+-\d+-\d+)"', line)
+            match = re.search(rb'data-count="(\d+)".*data-date="(\d+-\d+-\d+)"', line)
 
             if not match:
                 continue
@@ -103,7 +104,7 @@ def get_contribution_data(user, years):
     logger.debug('contribution_data=%s', contribution_data)
     return contribution_data
 
-def diff_contribution_data(data_user, data_donor):
+def diff_contribution_data(data_user: Dict[str, int], data_donor: Dict[str, int]) -> Dict[str, int]:
     """Calculates the difference between two Github users' activity data"""
 
     data_diff = {}
@@ -135,10 +136,10 @@ def diff_contribution_data(data_user, data_donor):
     return dict(sorted(data_diff.items(), key=lambda item: item[0]))
 
 
-def cli_get_configuration():
+def cli_get_configuration() -> Dict[str, str]:
     """Read configuration from the command line"""
 
-    config = {}
+    config: Dict[str, str] = {}
 
     config['username'] = input('Your Github username: ')
     if not config['username']:
@@ -171,7 +172,7 @@ def cli_get_configuration():
     return config
 
 
-def main():
+def main() -> None:
     """impost0r.py main function"""
 
     parser = argparse.ArgumentParser(prog=PROGNAME)
@@ -185,7 +186,7 @@ def main():
     elif args.verbose > 2:
         logger.setLevel(logging.DEBUG)
 
-    config = cli_get_configuration()
+    config: Dict[str, str] = cli_get_configuration()
 
     tempdir = tempfile.TemporaryDirectory()
     logger.info('Using tempdir=%s', tempdir.name)
@@ -203,7 +204,7 @@ def main():
             + config['repo']
     logger.info('Cloning %s to %s', repo_url, repo_tmpdir)
 
-    active_years = get_years_of_activity(config['donor'])
+    active_years: List[bytes] = get_years_of_activity(config['donor'])
     if not active_years:
         logger.error('No yearly data found for %s.', config['donor'])
         sys.exit(0)
@@ -223,9 +224,9 @@ def main():
     #       consequences and create freakishly
     #       large repositories.
     print('Getting activity for {}...'.format(config['username']))
-    data_user = get_contribution_data(config['username'], active_years)
+    data_user: Dict[str, int] = get_contribution_data(config['username'], active_years)
     print('Getting activity for {}...'.format(config['donor']))
-    data_donor = get_contribution_data(config['donor'], active_years)
+    data_donor: Dict[str, int] = get_contribution_data(config['donor'], active_years)
     if not data_donor:
         print('No activity found for {}.'.format(config['donor']))
         sys.exit(0)

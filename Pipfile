@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
+mypy = "*"
 
 [packages]
 dulwich = "*"

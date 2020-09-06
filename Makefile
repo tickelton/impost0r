@@ -7,6 +7,7 @@ help:
 	@echo "help        :    print this help message"
 	@echo "run         :    run impost0r in pipenv"
 	@echo "pylint      :    run pylint"
+	@echo "mypy        :    run mypy"
 	@echo "test        :    run all unit tests"
 	@echo "test_online :    run online unit tests"
 	@echo "test_misc   :    run misc unit tests"
@@ -21,6 +22,9 @@ requirements:
 
 pylint:
 	pipenv run pylint impost0r.py
+
+mypy:
+	pipenv run mypy --strict impost0r.py
 
 test:
 	pipenv run python -m unittest discover -v
