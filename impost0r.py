@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-impost0r.py lets you clone another user's github contribution calender
+impost0r.py lets you clone another user's GitHub contribution calender
 
 This is achieved by creating a repository containing backdated
 commits that replicates the activity of the source user
@@ -59,7 +59,7 @@ def progress(count: int, total: int, status: str = '') -> None:
     sys.stdout.flush()
 
 def get_years_of_activity(user: str) -> List[bytes]:
-    """Gets the years of activity from a Github user's profile page"""
+    """Gets the years of activity from a GitHub user's profile page"""
 
     overview_url = 'https://github.com/' + user
     logger.info('overview_url=%s', overview_url)
@@ -80,7 +80,7 @@ def get_years_of_activity(user: str) -> List[bytes]:
 
 
 def get_contribution_data(user: str, years: List[bytes]) -> Dict[str, int]:
-    """Gets the daily acitivity from a Github user's contribution calendar"""
+    """Gets the daily acitivity from a GitHub user's contribution calendar"""
 
     contributions_url = 'https://github.com/users/' + user + '/contributions'
     logger.info('getting data for %s', user)
@@ -105,7 +105,7 @@ def get_contribution_data(user: str, years: List[bytes]) -> Dict[str, int]:
     return contribution_data
 
 def diff_contribution_data(data_user: Dict[str, int], data_donor: Dict[str, int]) -> Dict[str, int]:
-    """Calculates the difference between two Github users' activity data"""
+    """Calculates the difference between two GitHub users' activity data"""
 
     data_diff = {}
 
@@ -141,23 +141,23 @@ def cli_get_configuration() -> Dict[str, str]:
 
     config: Dict[str, str] = {}
 
-    config['username'] = input('Your Github username: ')
+    config['username'] = input('Your GitHub username: ')
     if not config['username']:
         logger.error('Username required')
         sys.exit(1)
-    config['email'] = input('Your Github email address: ')
+    config['email'] = input('Your GitHub email address: ')
     if not config['email']:
         logger.error('Email address required')
         sys.exit(1)
-    config['password'] = getpass('Your Github password: ')
+    config['password'] = getpass('Your GitHub password: ')
     if not config['password']:
         logger.error('Password required')
         sys.exit(1)
-    config['repo'] = input('Github repository to create commits in: ')
+    config['repo'] = input('GitHub repository to create commits in: ')
     if not config['repo']:
         logger.error('Repository name required')
         sys.exit(1)
-    config['donor'] = input('Github user to clone: ')
+    config['donor'] = input('GitHub user to clone: ')
     if not config['donor']:
         logger.error('Donor username required')
         sys.exit(1)
@@ -254,13 +254,13 @@ def main() -> None:
     repo = porcelain.clone(repo_url, repo_tmpdir, errstream=err_stream)
 
     print('Creating and pushing new commits ...')
-    # NOTE: Github will not correctly update the
+    # NOTE: GitHub will not correctly update the
     #       calendar if a repository with more than 1000
     #       new commits is pushed. Only the most recent
     #       1000 will be displayed in the calendar.
     #       Workaround: create and push commits in
     #       several turns. And wait a couple of seconds
-    #       between pushes to let Github do its magic.
+    #       between pushes to let GitHub do its magic.
     total_commit_count = sum(data_repo.values())
     commits_generated = 0
     for (commit_date, commit_count) in data_repo.items():
