@@ -58,6 +58,7 @@ def progress(count: int, total: int, status: str = '') -> None:
     sys.stdout.write('[%s] %s%s %s\r' % (bar_string, percents, '%', status))
     sys.stdout.flush()
 
+
 def get_years_of_activity(user: str) -> List[bytes]:
     """Gets the years of activity from a GitHub user's profile page"""
 
@@ -103,6 +104,7 @@ def get_contribution_data(user: str, years: List[bytes]) -> Dict[str, int]:
 
     logger.debug('contribution_data=%s', contribution_data)
     return contribution_data
+
 
 def diff_contribution_data(data_user: Dict[str, int], data_donor: Dict[str, int]) -> Dict[str, int]:
     """Calculates the difference between two GitHub users' activity data"""
@@ -250,7 +252,6 @@ def main() -> None:
     print('Cloning {}...'.format(repo_url))
     devnull = open(os.devnull, 'w')
     err_stream = getattr(devnull, 'buffer', None)
-    # TODO: How do you check if clone was successful ?
     repo = porcelain.clone(repo_url, repo_tmpdir, errstream=err_stream)
 
     print('Creating and pushing new commits ...')
@@ -279,8 +280,6 @@ def main() -> None:
                 commit_timestamp=commit_stamp)
 
             if not commits_generated % 60:
-                # TODO: Compute expected total commits beforehand
-                #       and display a progress bar ?
                 progress(commits_generated, total_commit_count)
 
             if not commits_generated % 960:
