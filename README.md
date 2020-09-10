@@ -103,6 +103,7 @@ in is publicy readable.
 not use its configuration (like username and email) but ask you to enter
 the data explicitly.
 * There is a bug in dulwich 0.20.4 and 0.20.5 which causes the following error:  
+
       Creating and pushing new commits ...
       Traceback (most recent call last):00.0%
         File "/home/mint/dev/impost0r/impost0r.py", line 314, in <module>
@@ -112,7 +113,8 @@ the data explicitly.
         File "/media/ramdisk/venv/lib/python3.8/site-packages/dulwich/porcelain.py", line 996, in push
           (ref, error.encode(err_encoding)))
       AttributeError: 'NoneType' object has no attribute 'encode'
-The problem is solved in versions 0.20.6 of dulwich.
+
+  The problem is solved in versions 0.20.6 of dulwich.
 * Cloning data from an user with several years of regular activity can
 take a significant amount of time. E.g. cloning 10 years worth of 10+
 contributions per day can take in excess of 30 minutes.
