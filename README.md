@@ -2,7 +2,7 @@ impost0r
 ========
 
 impost0r is a tool that lets you clone the contribution activity of
-another Github user to your account.  
+another GitHub user to your account.  
 This is done by creating a repository with backdated commits in a
 way that it resembles the source user's activity a closely as
 possible.
@@ -30,7 +30,7 @@ Dependencies
 ------------
 
 ghdecoy.py requires at least Python 3.7 and [dulwich](https://www.dulwich.io/)
-0.20.3.
+0.20.6.
 
 Supported Operating Systems
 ---------------------------
@@ -66,20 +66,20 @@ Usage
 When running impost0r it will ask for all required parameters on
 the command line.  
 The followin data are required:  
-* Username: your Github username
-* Email: the email address associated with your Github account. It
-is important that this address is correct since Github uses it to determine
+* Username: your GitHub username
+* Email: the email address associated with your GitHub account. It
+is important that this address is correct since GitHub uses it to determine
 which commits to display in your contribution calendar.
-* Password: your Github password. The password is required to push the
-created repository to Github. It will not be displayed on the command line
+* Password: your GitHub password. The password is required to push the
+created repository to GitHub. It will not be displayed on the command line
 and is used exclusively for pushing.
-* Repository: Your repository in Github in which the new commits are to
+* Repository: Your repository in GitHub in which the new commits are to
 be created. The repository has to be cloneable without authentication and
 it is advisable to use a dedicated repository just for impostor. Ideally
 you just create a new public repository, tick the box for
 'Initialize this repository with a README' so that is immediately
 cloneable, and you are ready to go.
-* Donor username: the Github username of the person who's activity data
+* Donor username: the GitHub username of the person who's activity data
 you want to clone
 
 
@@ -87,7 +87,7 @@ Known issues and limitations
 ----------------------------
 
 * The newly created commits will usually become visible on your
-calendar withing minutes (according to Github it can take up to 24 hours!)
+calendar withing minutes (according to GitHub it can take up to 24 hours!)
 but the list with your years of activity at the bottom right of your
 account's overview page can take much longer to get updated and for some
 reason occasionally will not get updated at all. If the changes do not
@@ -102,10 +102,17 @@ in is publicy readable.
 * Even if there is an existing installation of git, impost0r will currently
 not use its configuration (like username and email) but ask you to enter
 the data explicitly.
-* There is a bug in dulwich 0.20.5 which causes the following error:
-The problem should be solved in newer versions of dulwich. As a workaround
-until a fixed version is available installing in from git or downgrading
-to 0.20.3 should work.
+* There is a bug in dulwich 0.20.4 and 0.20.5 which causes the following error:  
+      Creating and pushing new commits ...
+      Traceback (most recent call last):00.0%
+        File "/home/mint/dev/impost0r/impost0r.py", line 314, in <module>
+          main()
+        File "/home/mint/dev/impost0r/impost0r.py", line 303, in main
+          porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
+        File "/media/ramdisk/venv/lib/python3.8/site-packages/dulwich/porcelain.py", line 996, in push
+          (ref, error.encode(err_encoding)))
+      AttributeError: 'NoneType' object has no attribute 'encode'
+The problem is solved in versions 0.20.6 of dulwich.
 * Cloning data from an user with several years of regular activity can
 take a significant amount of time. E.g. cloning 10 years worth of 10+
 contributions per day can take in excess of 30 minutes.
