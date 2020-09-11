@@ -26,7 +26,7 @@ from dulwich import porcelain # type: ignore
 
 # constants
 PROGNAME = 'impost0r.py'
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 SECONDS_9AM = 9 * 60 * 60
 SLEEP_BETWEEN_PUSHES = 10 # Number of seconds to wait between pushes
 COMMITS_PER_PUSH = 960 # Maximum number of commits per push
