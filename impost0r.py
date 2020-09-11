@@ -28,6 +28,9 @@ from dulwich import porcelain # type: ignore
 PROGNAME = 'impost0r.py'
 VERSION = '0.1.0'
 SECONDS_9AM = 9 * 60 * 60
+SLEEP_BETWEEN_PUSHES = 10 # Number of seconds to wait between pushes
+COMMITS_PER_PUSH = 960 # Maximum number of commits per push
+COMMITS_PER_PROGRESS_BAR_UPDATE = 60
 
 
 # logging configuration
@@ -99,7 +102,7 @@ def get_contribution_data(user: str, years: List[bytes]) -> Dict[str, int]:
             if not match:
                 continue
             if match.group(1) != b'0':
-                #print("date={} count={}".format(match.group(2), match.group(1)))
+                logger.debug("date=%s count=%s", match.group(2), match.group(1))
                 contribution_data[match.group(2).decode()] = int(match.group(1))
 
     logger.debug('contribution_data=%s', contribution_data)
@@ -279,10 +282,10 @@ def main() -> None:
                 author=author_data,
                 commit_timestamp=commit_stamp)
 
-            if not commits_generated % 60:
+            if not commits_generated % COMMITS_PER_PROGRESS_BAR_UPDATE:
                 progress(commits_generated, total_commit_count)
 
-            if not commits_generated % 960:
+            if not commits_generated % COMMITS_PER_PUSH:
                 logger.info('pushing...')
                 porcelain.push(
                     repo_tmpdir,
@@ -295,9 +298,9 @@ def main() -> None:
                 #       in the calendar will be displayed correctly
                 #       but the list of years of activity will not
                 #       be updated!
-                time.sleep(10)
+                time.sleep(SLEEP_BETWEEN_PUSHES)
 
-    if commits_generated % 960:
+    if commits_generated % COMMITS_PER_PUSH:
         logger.info('final push')
         progress(commits_generated, total_commit_count)
         porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
