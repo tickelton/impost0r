@@ -29,7 +29,7 @@ For a video demonstration see the EXAMPLE below.
 Dependencies
 ------------
 
-ghdecoy.py requires at least Python 3.7 and [dulwich](https://www.dulwich.io/)
+impost0r requires at least Python 3.7 and [dulwich](https://www.dulwich.io/)
 0.20.6.
 
 Supported Operating Systems
