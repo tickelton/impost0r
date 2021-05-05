@@ -73,6 +73,11 @@ which commits to display in your contribution calendar.
 * Password: your GitHub password. The password is required to push the
 created repository to GitHub. It will not be displayed on the command line
 and is used exclusively for pushing.
+***NOTE:*** Github will disable password authentication in the near future.
+To continue using impost0r past this point you will have to create an
+access token and use that instead of a password. See
+https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+on how to create such a token.
 * Repository: Your repository in GitHub in which the new commits are to
 be created. The repository has to be cloneable without authentication and
 it is advisable to use a dedicated repository just for impostor. Ideally
@@ -86,6 +91,9 @@ you want to clone
 Known issues and limitations
 ----------------------------
 
+* impost0r uses 'main' as the branch name to commit to since
+that is the default on Github. Therefore a 'main' branch is
+required in the target repository.
 * The newly created commits will usually become visible on your
 calendar withing minutes (according to GitHub it can take up to 24 hours!)
 but the list with your years of activity at the bottom right of your
