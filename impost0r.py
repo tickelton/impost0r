@@ -290,7 +290,7 @@ def main() -> None:
                 porcelain.push(
                     repo_tmpdir,
                     push_url,
-                    'master',
+                    'main',
                     outstream=err_stream,
                     errstream=err_stream)
                 # NOTE: A certain minimum wait between pushes seems
@@ -303,7 +303,7 @@ def main() -> None:
     if commits_generated % COMMITS_PER_PUSH:
         logger.info('final push')
         progress(commits_generated, total_commit_count)
-        porcelain.push(repo_tmpdir, push_url, 'master', outstream=err_stream, errstream=err_stream)
+        porcelain.push(repo_tmpdir, push_url, 'main', outstream=err_stream, errstream=err_stream)
 
     progress(commits_generated, total_commit_count)
     print('\nFinished')
