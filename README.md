@@ -70,13 +70,12 @@ The followin data are required:
 * Email: the email address associated with your GitHub account. It
 is important that this address is correct since GitHub uses it to determine
 which commits to display in your contribution calendar.
-* Password: your GitHub password. The password is required to push the
+* Access Token: your GitHub personal access token. The token is required to push the
 created repository to GitHub. It will not be displayed on the command line
 and is used exclusively for pushing.
-***NOTE:*** Github will disable password authentication in the near future.
-To continue using impost0r past this point you will have to create an
-access token and use that instead of a password. See
-https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+A token is used for authentication instead of your password as Github will
+disable password authentication for repository access in the near future. See
+https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
 on how to create such a token.
 * Repository: Your repository in GitHub in which the new commits are to
 be created. The repository has to be cloneable without authentication and

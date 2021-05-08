@@ -7,7 +7,7 @@ commits that replicates the activity of the source user
 as closely as possible.
 """
 
-# Copyright (c) 2020 tick <tickelton@gmail.com>
+# Copyright (c) 2021 tick <tickelton@gmail.com>
 # SPDX-License-Identifier:	ISC
 
 import argparse
@@ -154,9 +154,9 @@ def cli_get_configuration() -> Dict[str, str]:
     if not config['email']:
         logger.error('Email address required')
         sys.exit(1)
-    config['password'] = getpass('Your GitHub password: ')
+    config['password'] = getpass('Your GitHub access token: ')
     if not config['password']:
-        logger.error('Password required')
+        logger.error('Access token required')
         sys.exit(1)
     config['repo'] = input('GitHub repository to create commits in: ')
     if not config['repo']:
