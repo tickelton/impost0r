@@ -43,6 +43,10 @@ logger.addHandler(handler)
 logger.setLevel(logging.ERROR)
 
 
+# global variables
+branch_name = 'main'
+
+
 # The progress bar function is
 # Copyright (c) 2016 Vladimir Ignatev
 # Licensed under the MIT License (MIT)
@@ -177,6 +181,30 @@ def cli_get_configuration() -> Dict[str, str]:
     return config
 
 
+def do_push(repo_tmpdir, push_url, err_stream) -> None:
+    """Perform the actual push"""
+
+    global branch_name
+    try:
+        porcelain.push(
+            repo_tmpdir,
+            push_url,
+            branch_name,
+            outstream=err_stream,
+            errstream=err_stream)
+    except KeyError:
+        # Github renamed the default branch for newly created
+        # repositories from 'master' to 'main'. To support
+        # both new and legacy repos, we first try 'main' and
+        # if that fails we use 'master' instead.
+        branch_name = 'master'
+        porcelain.push(
+            repo_tmpdir,
+            push_url,
+            branch_name,
+            outstream=err_stream,
+            errstream=err_stream)
+
 def main() -> None:
     """impost0r.py main function"""
 
@@ -287,12 +315,7 @@ def main() -> None:
 
             if not commits_generated % COMMITS_PER_PUSH:
                 logger.info('pushing...')
-                porcelain.push(
-                    repo_tmpdir,
-                    push_url,
-                    'main',
-                    outstream=err_stream,
-                    errstream=err_stream)
+                do_push(repo_tmpdir, push_url, err_stream)
                 # NOTE: A certain minimum wait between pushes seems
                 #       to be necessary. Otherwise the activity data
                 #       in the calendar will be displayed correctly
@@ -303,7 +326,7 @@ def main() -> None:
     if commits_generated % COMMITS_PER_PUSH:
         logger.info('final push')
         progress(commits_generated, total_commit_count)
-        porcelain.push(repo_tmpdir, push_url, 'main', outstream=err_stream, errstream=err_stream)
+        do_push(repo_tmpdir, push_url, err_stream)
 
     progress(commits_generated, total_commit_count)
     print('\nFinished')
