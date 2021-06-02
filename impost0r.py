@@ -158,7 +158,16 @@ def cli_get_configuration() -> Dict[str, str]:
     if not config['email']:
         logger.error('Email address required')
         sys.exit(1)
-    config['password'] = getpass('Your GitHub access token: ')
+
+    # If stdin is atty use getpass() to disable local echo so
+    # the password is not visible in the terminal.
+    # Otherwise use input() to allow reading the password from
+    # a pipe e.g. for automated execution in a cron job.
+    if sys.stdin.isatty():
+        config['password'] = getpass('Your GitHub access token: ')
+    else:
+        config['password'] = input('Your GitHub access token: ')
+
     if not config['password']:
         logger.error('Access token required')
         sys.exit(1)
