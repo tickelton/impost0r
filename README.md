@@ -35,7 +35,7 @@ impost0r requires at least Python 3.7 and [dulwich](https://www.dulwich.io/)
 Supported Operating Systems
 ---------------------------
 
-ghdecoy is developed and tested on Linux and Windows 10.  
+import0r is developed and tested on Linux and Windows 10.  
 MacOS an other Unix-like operating systems should work but are not
 officially supported.
 
