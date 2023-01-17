@@ -101,13 +101,13 @@ def get_contribution_data(user: str, years: List[bytes]) -> Dict[str, int]:
         contributions = contributions_page.readlines()
         logger.debug('year=%s, contributions=%s', year, contributions)
         for line in contributions:
-            match = re.search(rb'data-count="(\d+)".*data-date="(\d+-\d+-\d+)"', line)
+            match = re.search(rb'data-date="(\d+-\d+-\d+)".*data-level="(\d+)"', line)
 
             if not match:
                 continue
-            if match.group(1) != b'0':
-                logger.debug("date=%s count=%s", match.group(2), match.group(1))
-                contribution_data[match.group(2).decode()] = int(match.group(1))
+            if match.group(2) != b'0':
+                logger.debug("date=%s count=%s", match.group(1), match.group(2))
+                contribution_data[match.group(1).decode()] = int(match.group(2))
 
     logger.debug('contribution_data=%s', contribution_data)
     return contribution_data
